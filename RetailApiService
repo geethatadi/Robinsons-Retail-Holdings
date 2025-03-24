@@ -1,0 +1,28 @@
+class RetailAdapter(
+    private val retailItems: List<RetailItem>,
+    private val onItemClick: (RetailItem) -> Unit
+) : RecyclerView.Adapter<RetailAdapter.RetailViewHolder>() {
+
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RetailViewHolder {
+        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_retail, parent, false)
+        return RetailViewHolder(view)
+    }
+
+    override fun onBindViewHolder(holder: RetailViewHolder, position: Int) {
+        val item = retailItems[position]
+        holder.bind(item)
+        holder.itemView.setOnClickListener { onItemClick(item) }
+    }
+
+    override fun getItemCount(): Int = retailItems.size
+
+    class RetailViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        private val itemName: TextView = itemView.findViewById(R.id.item_name)
+        private val itemDate: TextView = itemView.findViewById(R.id.item_date)
+
+        fun bind(item: RetailItem) {
+            itemName.text = item.name
+            itemDate.text = item.date
+        }
+    }
+}
