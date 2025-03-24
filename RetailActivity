@@ -1,0 +1,83 @@
+import android.os.Bundle
+import android.content.Intent
+import android.widget.Toast
+import androidx.appcompat.app.AppCompatActivity
+import androidx.recyclerview.widget.RecyclerView
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
+import kotlinx.coroutines.*
+import java.text.SimpleDateFormat
+import java.util.*
+
+class RetailActivity : AppCompatActivity() {
+
+    private lateinit var retailList: List<RetailItem>
+    private lateinit var recyclerView: RecyclerView
+
+    // Retrofit instance
+    private val retrofit = Retrofit.Builder()
+        .baseUrl("https://your-api-base-url.com/") // Your base API URL
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    private val retailApi = retrofit.create(RetailApiService::class.java)
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_retail)
+
+        recyclerView = findViewById(R.id.recyclerView) // Assuming you're using RecyclerView
+
+        // Fetch data asynchronously
+        fetchRetailItems()
+    }
+
+    private fun fetchRetailItems() {
+        // Run the API call in a coroutine
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = retailApi.getRetailItems()
+                
+                withContext(Dispatchers.Main) {
+                    if (response.isNotEmpty()) {
+                        retailList = response
+                        // Sort the list by date
+                        val sortedList = retailList.sortedBy { parseDate(it.date) }
+                        
+                        // Pass the sorted data to your RecyclerView or ListView
+                        setupRecyclerView(sortedList)
+                    } else {
+                        Toast.makeText(this@RetailActivity, "No data found", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@RetailActivity, "Error fetching data", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun parseDate(dateString: String): Date {
+        val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+        return dateFormat.parse(dateString) ?: Date()
+    }
+
+    private fun setupRecyclerView(sortedList: List<RetailItem>) {
+        // Set up your RecyclerView adapter here with the sortedList
+        // Example:
+        val adapter = RetailAdapter(sortedList) { item ->
+            openDetails(item)
+        }
+        recyclerView.adapter = adapter
+    }
+
+    private fun openDetails(item: RetailItem) {
+        val intent = Intent(this, ItemDetailActivity::class.java).apply {
+            putExtra("item_name", item.name)
+            putExtra("item_description", item.description)
+            putExtra("item_date", item.date)
+        }
+        startActivity(intent)
+    }
+}
